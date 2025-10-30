@@ -1,61 +1,77 @@
+"""Inventory management system for adding, removing, and saving stock data."""
+
 import json
-import logging
 from datetime import datetime
 
-# Global variable
-stock_data = {}
 
-def addItem(item="default", qty=0, logs=[]):
-    if not item:
-        return
-    stock_data[item] = stock_data.get(item, 0) + qty
-    logs.append("%s: Added %d of %s" % (str(datetime.now()), qty, item))
+class InventorySystem:
+    """A class-based inventory management system."""
 
-def removeItem(item, qty):
-    try:
-        stock_data[item] -= qty
-        if stock_data[item] <= 0:
-            del stock_data[item]
-    except:
-        pass
+    def __init__(self, file_name="inventory.json"):
+        """Initialize with a file name and empty stock data."""
+        self.file_name = file_name
+        self.stock_data = {}
+        self.logs = []
 
-def getQty(item):
-    return stock_data[item]
+    def add_item(self, item="default", qty=0):
+        """Add a new item or update its quantity."""
+        if not item:
+            return
+        self.stock_data[item] = self.stock_data.get(item, 0) + qty
+        self.logs.append(f"{datetime.now()}: Added {qty} of {item}")
 
-def loadData(file="inventory.json"):
-    f = open(file, "r")
-    global stock_data
-    stock_data = json.loads(f.read())
-    f.close()
+    def remove_item(self, item, qty):
+        """Remove a quantity of an item from the stock."""
+        if item not in self.stock_data:
+            print(f"Item '{item}' not found in inventory.")
+            return
+        self.stock_data[item] -= qty
+        if self.stock_data[item] <= 0:
+            del self.stock_data[item]
 
-def saveData(file="inventory.json"):
-    f = open(file, "w")
-    f.write(json.dumps(stock_data))
-    f.close()
+    def get_qty(self, item):
+        """Return the quantity of a specific item."""
+        return self.stock_data.get(item, 0)
 
-def printData():
-    print("Items Report")
-    for i in stock_data:
-        print(i, "->", stock_data[i])
+    def load_data(self):
+        """Load stock data from a JSON file."""
+        try:
+            with open(self.file_name, "r", encoding="utf-8") as file:
+                self.stock_data = json.load(file)
+        except FileNotFoundError:
+            self.stock_data = {}
 
-def checkLowItems(threshold=5):
-    result = []
-    for i in stock_data:
-        if stock_data[i] < threshold:
-            result.append(i)
-    return result
+    def save_data(self):
+        """Save current stock data to a JSON file."""
+        with open(self.file_name, "w", encoding="utf-8") as file:
+            json.dump(self.stock_data, file, indent=4)
+
+    def print_data(self):
+        """Print the current inventory report."""
+        print("Items Report:")
+        for item, qty in self.stock_data.items():
+            print(f"{item} -> {qty}")
+
+    def check_low_items(self, threshold=5):
+        """Return a list of items below a given threshold."""
+        return [item for item, qty in self.stock_data.items() if qty < threshold]
+
 
 def main():
-    addItem("apple", 10)
-    addItem("banana", -2)
-    addItem(123, "ten")  # invalid types, no check
-    removeItem("apple", 3)
-    removeItem("orange", 1)
-    print("Apple stock:", getQty("apple"))
-    print("Low items:", checkLowItems())
-    saveData()
-    loadData()
-    printData()
-    eval("print('eval used')")  # dangerous
+    """Main function to run inventory operations."""
+    system = InventorySystem()
+    system.add_item("apple", 10)
+    system.add_item("banana", -2)
+    system.add_item("grapes", 5)
+    system.remove_item("apple", 3)
+    system.remove_item("orange", 1)
 
-main()
+    print("Apple stock:", system.get_qty("apple"))
+    print("Low items:", system.check_low_items())
+    system.save_data()
+    system.load_data()
+    system.print_data()
+
+
+if __name__ == "__main__":
+    main()
